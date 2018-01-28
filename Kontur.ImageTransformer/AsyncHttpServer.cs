@@ -168,6 +168,13 @@ namespace Kontur.ImageTransformer
 
             byte methodFilter = CheckUrl(listenerContext.Request.Url.ToString(),ref x,ref y,ref w,ref h,ref thresholdX);
 
+            if (w==0 && h==0)
+            {
+                listenerContext.Response.StatusCode =(int) HttpStatusCode.NoContent;
+                listenerContext.Response.StatusDescription = HttpStatusCode.NoContent.ToString();
+                listenerContext.Response.Close();
+                return;
+            }
             if (listenerContext.Request.HttpMethod.ToString() == "POST" && methodFilter !=0 &&
                 listenerContext.Request.HasEntityBody == true && CheckFileSize(listenerContext.Request.ContentLength64))
             {
@@ -176,38 +183,52 @@ namespace Kontur.ImageTransformer
                 long contentLength = listenerContext.Request.ContentLength64;
                 byte[] buffer = new byte[contentLength]; //BODY
                 data.Read(buffer, 0, asd);
-
+                
                 byte[] responseBodyArray=null;
                 switch (methodFilter)
                 {
                     case 1:
                         {
                             //grayscale
-                            responseBodyArray = ImageFiltering.GetBytesOutputArray(ImageFiltering.DrawAsGrayscale(ref buffer, x, y, w, h));
+                            //responseBodyArray = ImageFiltering.GetBytesOutputArray(ImageFiltering.DrawAsGrayscale(ref buffer, x, y, w, h));
+                            Bitmap resultFilters = Filter2.DrawAsGrayscale(data);
+                            responseBodyArray = ImageFiltering.GetBytesOutputArray(resultFilters);
+                            listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                            listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
                             break;
                         }
                     case 2:
                         {
                             //sepia
                             responseBodyArray = ImageFiltering.GetBytesOutputArray(ImageFiltering.DrawAsSepiaTone(ref buffer, x, y, w, h));
+
+                            listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                            listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
                             break;
                         }
                     case 3:
                         {
                             //threshold
+
+                            listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                            listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
                             break;
                         }
                     default:break;
                 }
 
                 //listenerContext.Response.ContentLength64 = outputBodyArray.LongLength;
-                listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
-                listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
+                //listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                //listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
                
 
             }
             else
             {
+                listenerContext.Response.StatusCode =(int)HttpStatusCode.BadRequest;
+                listenerContext.Response.ContentType = "text/html";
+                listenerContext.Response.StatusDescription = HttpStatusCode.BadRequest.ToString();
+                //listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
                 return;
             }
             
