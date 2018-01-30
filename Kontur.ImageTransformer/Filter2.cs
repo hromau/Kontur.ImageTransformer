@@ -27,7 +27,16 @@ namespace Kontur.ImageTransformer
         private static Bitmap ApplyColorMatrix(ColorMatrix colorMatrix,Stream stream)
         {
             //Bitmap bmp32BppSource = GetArgbCopy(sourceImage);
-            Bitmap bmp32BppSource = new Bitmap(stream);
+            //Bitmap bmp32BppSource = new Bitmap(stream);
+            Bitmap bmp32BppSource = null;
+            try
+            {
+                bmp32BppSource = new Bitmap(stream);
+            }
+            catch(Exception ex)
+            {
+                return null;
+            }
             Bitmap bmp32BppDest = new Bitmap(bmp32BppSource.Width, bmp32BppSource.Height, PixelFormat.Format32bppArgb);
 
             using (Graphics graphics = Graphics.FromImage(bmp32BppDest))

@@ -18,9 +18,9 @@ namespace Kontur.ImageTransformer
         private bool disposed;
         private volatile bool isRunning;
 
-        public static Regex urlGrayscale = new Regex(@"\w+(/process/grayscale/\d,\d,\d,\d/)");
-        public static Regex urlSepia = new Regex(@"\w+/process/sepia/\d,\d,\d,\d/");
-        public static Regex urlThreshold = new Regex(@"\w+/process/threshold(\d{100})/\d,\d,\d,\d/");
+        public static Regex urlGrayscale = new Regex(@"\w+/process/grayscale/\d{0,4},\d{0,4},\d{0,4},\d{0,4}/");
+        public static Regex urlSepia = new Regex(@"\w+/process/sepia/\d{0,4},\d{0,4},\d{0,4},\d{0,4}/");
+        public static Regex urlThreshold = new Regex(@"\w+/process/threshold(\d{0,3})/\d{0,4},\d{0,4},\d{0,4},\d{0,4}/");
 
         public AsyncHttpServer()
         {
@@ -175,9 +175,10 @@ namespace Kontur.ImageTransformer
                 listenerContext.Response.Close();
                 return;
             }
-            if (listenerContext.Request.HttpMethod.ToString() == "POST" && methodFilter !=0 &&
+            if (listenerContext.Request.HttpMethod == "POST" && methodFilter !=0 &&
                 listenerContext.Request.HasEntityBody == true && CheckFileSize(listenerContext.Request.ContentLength64))
             {
+                
                 Stream data = listenerContext.Request.InputStream;
                 int asd = data.ReadByte();
                 long contentLength = listenerContext.Request.ContentLength64;
@@ -191,10 +192,28 @@ namespace Kontur.ImageTransformer
                         {
                             //grayscale
                             //responseBodyArray = ImageFiltering.GetBytesOutputArray(ImageFiltering.DrawAsGrayscale(ref buffer, x, y, w, h));
-                            Bitmap resultFilters = Filter2.DrawAsGrayscale(data);
+                            Bitmap resultFilters = Filter2.DrawAsGrayscale(listenerContext.Request.InputStream);
                             responseBodyArray = ImageFiltering.GetBytesOutputArray(resultFilters);
+                            if (responseBodyArray==null)
+                            {
+                                using (var writer = new StreamWriter(listenerContext.Response.OutputStream))
+                                {
+                                    byte[] buffer111 = System.Text.Encoding.UTF8.GetBytes("<HTML><BODY> " + listenerContext.Request.HttpMethod + "</BODY></HTML>");
+                                    // Get a response stream and write the response to it.
+                                    //listenerContext.Response.ContentLength64 = buffer111.Length;
+                                    //System.IO.Stream output = listenerContext.Response.OutputStream;
+                                    //output.WriteLine(buffer111, 0, buffer111.Length);
+                                    //output.Close();
+                                    writer.WriteLine(buffer111);
+                                }
+                                break;
+                            }
                             listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
                             listenerContext.Response.OutputStream.Read(responseBodyArray, 0, responseBodyArray.Length);
+
+
+                            
+                           
                             break;
                         }
                     case 2:
@@ -225,25 +244,15 @@ namespace Kontur.ImageTransformer
             }
             else
             {
-                listenerContext.Response.StatusCode =(int)HttpStatusCode.BadRequest;
-                listenerContext.Response.ContentType = "text/html";
-                listenerContext.Response.StatusDescription = HttpStatusCode.BadRequest.ToString();
-                //listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                using (var writer = new StreamWriter(listenerContext.Response.OutputStream))
+                {
+                    listenerContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    listenerContext.Response.ContentType = "text/html";
+                    listenerContext.Response.StatusDescription = HttpStatusCode.BadRequest.ToString();
+                    //listenerContext.Response.OutputStream.SetLength(responseBodyArray.LongLength);
+                    writer.WriteLine(listenerContext.Response.StatusCode+" "+ listenerContext.Response.StatusDescription);
+                }
                 return;
-            }
-            
-            
-            string body2 = listenerContext.Request.QueryString.ToString();
-            string headers = listenerContext.Request.Headers.ToString();
-            
-
-           
-            using (var writer = new StreamWriter(listenerContext.Response.OutputStream))
-            {
-                if (listenerContext.Response.StatusCode == (int)HttpStatusCode.OK)
-                    writer.WriteLine(HttpStatusCode.OK.ToString());
-                //writer.WriteLine("Hello, world!");
-                
             }
         }
 

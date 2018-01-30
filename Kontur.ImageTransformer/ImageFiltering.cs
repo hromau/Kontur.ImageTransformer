@@ -132,6 +132,8 @@ namespace Kontur.ImageTransformer
         //Получаем количество байт в загруженном изображении
         public static byte[] GetBytesOutputArray(Bitmap input_image)
         {
+            if (input_image == null)
+                return null;
             int in_bytes = input_image.Width * input_image.Height * 3;
             Rectangle rect = new Rectangle
                 (
