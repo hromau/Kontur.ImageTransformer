@@ -90,6 +90,8 @@ namespace Kontur.ImageTransformer
             return bmp32BppDest;
         }
 
+        
+
         public static Bitmap DrawAsSepiaTone(ref byte[] byteBuffer, byte x, byte y, byte w, byte h)
         {
             ColorMatrix colorMatrix = new ColorMatrix(new float[][]
