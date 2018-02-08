@@ -11,7 +11,7 @@ namespace Kontur.ImageTransformer
 {
     public class NewFilter
     {
-        public static Bitmap DrawAsGrayscale(Image sourceImage,byte w,byte h)
+        public static Bitmap DrawAsGrayscale(Image sourceImage,byte x,byte y,byte w,byte h)
         {
             ColorMatrix colorMatrix = new ColorMatrix(new float[][]
                                                 {
@@ -22,9 +22,9 @@ namespace Kontur.ImageTransformer
                                                     new float[] {0, 0, 0, 0, 1}
                                                 });
 
-            return ApplyColorMatrix(sourceImage, colorMatrix,w,h);
+            return ApplyColorMatrix(sourceImage, colorMatrix,x,y,w,h);
         }
-        public static Bitmap DrawAsSepiaTone(Image sourceImage, byte w, byte h)
+        public static Bitmap DrawAsSepiaTone(Image sourceImage, byte x, byte y, byte w, byte h)
         {
             ColorMatrix colorMatrix = new ColorMatrix(new float[][]
                                                 {
@@ -35,9 +35,9 @@ namespace Kontur.ImageTransformer
                                                     new float[] {0, 0, 0, 0, 1}
                                                 });
 
-            return ApplyColorMatrix(sourceImage, colorMatrix, w, h);
+            return ApplyColorMatrix(sourceImage, colorMatrix,x,y, w, h);
         }
-        public static byte[] DrawAsThreshold(byte[] byteBuffer, byte thresholdX, byte w, byte h)
+        public static byte[] DrawAsThreshold(byte[] byteBuffer, byte thresholdX, byte x, byte y, byte w, byte h)
         {
             byte[] pixelBuffer = new byte[byteBuffer.LongLength];
             double blue = 0;
@@ -45,7 +45,10 @@ namespace Kontur.ImageTransformer
             double red = 0;
 
 
-            for (int k = 0; k + 4 < pixelBuffer.Length; k += 4)
+            ImageAttributes imageAttributes = new ImageAttributes();
+            imageAttributes.SetThreshold(1,)
+
+            for (int k = 8; k + 4 < pixelBuffer.Length; k += 4)
             {
                 blue = byteBuffer[k];
                 green = byteBuffer[k + 1];
@@ -88,24 +91,25 @@ namespace Kontur.ImageTransformer
                 pixelBuffer[k + 2] = (byte)red;
             }
 
-            return GetByteOutputArray(GetArgbCopy(ArrayToImage(pixelBuffer),w,h));
+            return GetByteOutputArray(GetArgbCopy(ArrayToImage(pixelBuffer),x,y,w,h));
         }
 
-        private static Bitmap GetArgbCopy(Image sourceImage,byte w,byte h)
+        private static Bitmap GetArgbCopy(Image sourceImage, byte x, byte y, byte w,byte h)
         {
             Bitmap bmpNew = new Bitmap(w, h, PixelFormat.Format32bppArgb);
 
             using (Graphics graphics = Graphics.FromImage(bmpNew))
             {
-                graphics.DrawImage(sourceImage, new Rectangle(0, 0, bmpNew.Width, bmpNew.Height), new Rectangle(0, 0, bmpNew.Width, bmpNew.Height), GraphicsUnit.Pixel);
+                graphics.DrawImage(sourceImage, new Rectangle(x,y, bmpNew.Width, bmpNew.Height), new Rectangle(x,y, bmpNew.Width, bmpNew.Height), GraphicsUnit.Pixel);
                 graphics.Flush();
+                //graphics.DrawImage(sourceImage,new Rectangle(x,y,w,h),new Rectangle(x,y,w,h),)
             }
 
             return bmpNew;
         }
-        private static Bitmap ApplyColorMatrix(Image sourceImage, ColorMatrix colorMatrix,byte w,byte h)
+        private static Bitmap ApplyColorMatrix(Image sourceImage, ColorMatrix colorMatrix,byte x,byte y,byte w,byte h)
         {
-            Bitmap bmp32BppSource = GetArgbCopy(sourceImage,w,h);
+            Bitmap bmp32BppSource = GetArgbCopy(sourceImage,x,y,w,h);
             Bitmap bmp32BppDest = new Bitmap(bmp32BppSource.Width, bmp32BppSource.Height, PixelFormat.Format32bppArgb);
 
             using (Graphics graphics = Graphics.FromImage(bmp32BppDest))
@@ -170,6 +174,7 @@ namespace Kontur.ImageTransformer
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
             }
             return Image.FromStream(ms);
         }
