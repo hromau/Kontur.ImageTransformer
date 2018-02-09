@@ -11,8 +11,9 @@ namespace Kontur.ImageTransformer
 {
     public class NewFilter
     {
-        public static Bitmap DrawAsGrayscale(Image sourceImage,byte x,byte y,byte w,byte h)
+        public static Bitmap DrawAsGrayscale(byte[] inputArray, byte x,byte y,byte w,byte h)
         {
+            Image sourceImage = ArrayToImage(inputArray);
             ColorMatrix colorMatrix = new ColorMatrix(new float[][]
                                                 {
                                                     new float[] {.3f, .3f, .3f, 0, 0},
@@ -24,8 +25,9 @@ namespace Kontur.ImageTransformer
 
             return ApplyColorMatrix(sourceImage, colorMatrix,x,y,w,h);
         }
-        public static Bitmap DrawAsSepiaTone(Image sourceImage, byte x, byte y, byte w, byte h)
+        public static Bitmap DrawAsSepiaTone(byte[] inputArray, byte x, byte y, byte w, byte h)
         {
+            Image sourceImage = ArrayToImage(inputArray);
             ColorMatrix colorMatrix = new ColorMatrix(new float[][]
                                                 {
                                                     new float[] {.393f, .349f, .272f, 0, 0},
@@ -37,65 +39,96 @@ namespace Kontur.ImageTransformer
 
             return ApplyColorMatrix(sourceImage, colorMatrix,x,y, w, h);
         }
-        public static byte[] DrawAsThreshold(byte[] byteBuffer, byte thresholdX, byte x, byte y, byte w, byte h)
+        public static Bitmap DrawAsThreshold(byte[] inputArray,byte thresholdX,byte x,byte y,byte w,byte h)
         {
-            byte[] pixelBuffer = new byte[byteBuffer.LongLength];
-            double blue = 0;
-            double green = 0;
-            double red = 0;
+            Image inputImage = ArrayToImage(inputArray);
+            Bitmap bmp32BppSource = GetArgbCopy(inputImage, x, y, w, h);
+            Bitmap bmp32BppDest = new Bitmap(bmp32BppSource.Width, bmp32BppSource.Height, PixelFormat.Format32bppArgb);
 
-
-            ImageAttributes imageAttributes = new ImageAttributes();
-            imageAttributes.SetThreshold(1,)
-
-            for (int k = 8; k + 4 < pixelBuffer.Length; k += 4)
+            using (Graphics graphics = Graphics.FromImage(bmp32BppDest))
             {
-                blue = byteBuffer[k];
-                green = byteBuffer[k + 1];
-                red = byteBuffer[k + 2];
+                ImageAttributes imageAttributes = new ImageAttributes();
+                imageAttributes.SetThreshold(thresholdX);
 
-                var intens = (byteBuffer[k] + byteBuffer[k + 1] + byteBuffer[k + 2]) / 3;
+                graphics.DrawImage(bmp32BppSource, new Rectangle(0, 0, bmp32BppSource.Width, bmp32BppSource.Height),
+                                 0, 0, bmp32BppSource.Width, bmp32BppSource.Height, GraphicsUnit.Pixel, imageAttributes);
 
-                if (blue >= 255 * thresholdX / 100)
-                {
-                    blue = 255;
-                }
-                else
-                {
-                    blue = 0;
-                }
-
-
-                if (green >= 255 * thresholdX / 100)
-                {
-                    green = 255;
-                }
-                else
-                {
-                    green = 0;
-                }
-
-
-                if (red > 255 * thresholdX / 100)
-                {
-                    red = 255;
-                }
-                else
-                {
-                    red = 0;
-                }
-
-
-                pixelBuffer[k] = (byte)blue;
-                pixelBuffer[k + 1] = (byte)green;
-                pixelBuffer[k + 2] = (byte)red;
             }
 
-            return GetByteOutputArray(GetArgbCopy(ArrayToImage(pixelBuffer),x,y,w,h));
+            bmp32BppSource.Dispose();
+
+            return bmp32BppDest;
         }
+
+        //public static byte[] DrawAsThreshold(byte[] byteBuffer, byte thresholdX, byte x, byte y, byte w, byte h)
+        //{
+        //    byte[] pixelBuffer = new byte[byteBuffer.LongLength];
+        //    double blue = 0;
+        //    double green = 0;
+        //    double red = 0;
+
+
+        //    ImageAttributes imageAttributes = new ImageAttributes();
+        //  //  imageAttributes.SetThreshold(1,)
+
+        //    for (int k = 8; k + 4 < pixelBuffer.Length; k += 4)
+        //    {
+        //        blue = byteBuffer[k];
+        //        green = byteBuffer[k + 1];
+        //        red = byteBuffer[k + 2];
+
+        //        var intens = (byteBuffer[k] + byteBuffer[k + 1] + byteBuffer[k + 2]) / 3;
+
+        //        if (blue >= 255 * thresholdX / 100)
+        //        {
+        //            blue = 255;
+        //        }
+        //        else
+        //        {
+        //            blue = 0;
+        //        }
+
+
+        //        if (green >= 255 * thresholdX / 100)
+        //        {
+        //            green = 255;
+        //        }
+        //        else
+        //        {
+        //            green = 0;
+        //        }
+
+
+        //        if (red > 255 * thresholdX / 100)
+        //        {
+        //            red = 255;
+        //        }
+        //        else
+        //        {
+        //            red = 0;
+        //        }
+
+
+        //        pixelBuffer[k] = (byte)blue;
+        //        pixelBuffer[k + 1] = (byte)green;
+        //        pixelBuffer[k + 2] = (byte)red;
+        //    }
+
+        //    return GetByteOutputArray(GetArgbCopy(ArrayToImage(pixelBuffer),x,y,w,h));
+        //}
 
         private static Bitmap GetArgbCopy(Image sourceImage, byte x, byte y, byte w,byte h)
         {
+            if (x < 0)
+            {
+                w -= x;
+                x = 0;
+            }
+            if (y < 0)
+            {
+                h -= y;
+                y = 0;
+            }
             Bitmap bmpNew = new Bitmap(w, h, PixelFormat.Format32bppArgb);
 
             using (Graphics graphics = Graphics.FromImage(bmpNew))
@@ -126,7 +159,6 @@ namespace Kontur.ImageTransformer
 
             return bmp32BppDest;
         }
-        //Получаем количество байт в загруженном изображении
         public static byte[] GetByteOutputArray(Bitmap input_image)
         {
             if (input_image == null)
@@ -173,10 +205,11 @@ namespace Kontur.ImageTransformer
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message+" "+DateTime.Now);
                 Console.WriteLine(ex.StackTrace);
             }
             return Image.FromStream(ms);
         }
+
     }
 }
